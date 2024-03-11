@@ -1,6 +1,6 @@
 let products = [
-    {id: 1, name: "Phone", value: 2000},
-    {id: 2, name: "Notebook", value: 4000}
+    {id: 1, name: "Phone", value: 2000.00},
+    {id: 2, name: "Notebook", value: 4000.00}
 ];
 
 let nextProductID = products.length + 1;
