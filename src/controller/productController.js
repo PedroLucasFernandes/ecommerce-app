@@ -63,12 +63,13 @@ const updateProduct = (req, res) => {
 const deleteProduct = (req, res) => {
     const productID = parseInt(req.params.id);
 
-    products = products.filter((product) => product.id === productID);
+    products = products.filter((product) => product.id !== productID);
 
     res.status(200).json({ message: `Produto ${productID} deletado.`});
 };
 
 module.exports = {
+    products,
     getAllProducts,
     getProduct,
     createProduct,

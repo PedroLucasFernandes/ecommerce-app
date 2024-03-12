@@ -4,14 +4,14 @@ let customers = [
 ];
 
 const getAllCustomers = (req, res) => {
-    res.status(200).json(customers);
+    return res.status(200).json(customers);
 };
 
 const getCustomer = (req, res) => {
-    const customerID = parseInt(req.params.id);
-    const customerIndex = customers.findIndex((customer) => customer.id === customerID);
+    const customerId = parseInt(req.params.id);
+    const customerIndex = customers.findIndex((customer) => customer.id === customerId);
 
-    if (!Number.isInteger(order.id) || customerIndex === -1) {
+    if (!Number.isInteger(customerId) || customerIndex === -1) {
         return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
@@ -47,7 +47,7 @@ const updateCustomer = (req, res) => {
 
     const customerIndex = customers.findIndex(customer => customer.id === customerId);
 
-    if (!Number.isInteger(order.id) || customerIndex === -1) {
+    if (!Number.isInteger(customerId) || customerIndex === -1) {
         return res.status(404).json({ error: "Cliente não encontrado" });
     }
 
@@ -71,19 +71,13 @@ const updateCustomer = (req, res) => {
 
 const deleteCustomer = (req, res) => {
     const customerId = parseInt(req.params.id);
+    customers = customers.filter((customer) => customer.id !== customerId);
 
-    const customerIndex = customers.findIndex(customer => customer.id === customerId);
-
-    if (!Number.isInteger(order.id) || customerIndex === -1) {
-        return res.status(404).json({ error: "Cliente não encontrado" });
-    }
-
-    customers.splice(customerIndex, 1);
-
-    res.status(200).json({ message: `Cliente ${customerId} deletado.` });
+    res.status(200).json({ message: `Cliente ${customerId} deletado.`});
 };
 
 module.exports = {
+    customers,
     getAllCustomers,
     getCustomer,
     createCustomer,

@@ -1,4 +1,5 @@
-const { getAllCustomers } = require('./customerController');
+const { customers } = require('./customerController');
+const { products } = require('./productController');
 
 let orders = [
     { id: 1, customerId: 1, items: [{ id: 1, quantity: 2 }, { id: 2, quantity: 1 }]},
@@ -24,8 +25,8 @@ const getOrder = (req, res) => {
 const createOrder = (req, res) => {
     const { customerId, items } = req.body;
     
-    const customerExists = getAllCustomers().some(customer => customer.id === customerId);
-    if (!customerExists || !customerId) {
+    const customer = customers.find(customer => customer.id === customerId);
+    if (!customer || !customerId) {
         return res.status(404).json({ error: "Cliente não encontrado." });
     }
 
@@ -57,8 +58,8 @@ const updateOrder = (req, res) => {
         return res.status(404).json({ error: 'Pedido não encontrado' });
     }
 
-    const customerExists = getAllCustomers().some(customer => customer.id === customerId);
-    if (!customerExists || !customerId) {
+    const customer = customers.find(customer => customer.id === customerId);
+    if (!customer || !customerId) {
         return res.status(404).json({ error: "Cliente não encontrado." });
     }
 
@@ -79,17 +80,11 @@ const updateOrder = (req, res) => {
 };
 
 const deleteOrder = (req, res) => {
-    const orderId = parseInt(req.params.id);
+    const orderID = parseInt(req.params.id);
 
-    const orderIndex = orders.findIndex(order => order.id === orderId);
+    orders = orders.filter((order) => order.id !== orderID);
 
-    if (orderIndex === -1) {
-        return res.status(404).json({ error: 'Pedido não encontrado' });
-    }
-
-    orders.splice(orderIndex, 1);
-
-    res.status(200).json({ message: `Pedido ${orderId} deletado.` });
+    res.status(200).json({ message: `Pedido ${orderID} deletado.`});
 };
 
 const searchOrdersByProduct = (req, res) => {
