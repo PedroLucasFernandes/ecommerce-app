@@ -57,11 +57,65 @@ const autenticate = (req, res) => {
     loginUsers[index].sessionToken = sessionToken;
 
     res.cookie('session_id', sessionToken, { maxAge: 900000, httpOnly: true });
-    res.status(200).json({ success: true })
+    res.status(200).json({ message: sessionToken })
+};
+
+const getAllLogins = (req, res) => {
+    return res.status(200).json(loginUsers);
+};
+
+const getUsernameLogin = (req, res) => {
+    const username = req.params.username;
+    const userIndex = loginUsers.findIndex((user) => user.username === username);
+
+    if(userIndex === -1){
+        return res.status(400).json({ message: "Usuário não encontrado." });
+    }
+    
+    if (loginUsers[userIndex].userType.find((user) => user === "admin")){
+        res.status(200).json(loginUsers[userIndex]);
+    } else{
+        return res.status(400).json({ message: "Só é possível ver usuários administradores." });
+    }
+
+};
+
+const updateUser = (req, res) => {
+    const userToUpdate = req.params.username;
+    const { username, password } = req.body;
+
+    const userIndex = loginUsers.findIndex((user) => user.username === userToUpdate);
+
+    if(userIndex === -1){
+        return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    if (loginUsers[userIndex].userType.find((user) => user === "admin")){
+        loginUsers[userIndex] = { ...loginUsers[userIndex], username, password };
+        res.status(200).json({ message: `Usuário ${username} atualizado.`});
+    } else{
+        return res.status(400).json({ message: "Só é possível deletar usuários administradores." });
+    }
+};
+
+const deleteUser = (req, res) => {
+    const username = req.params.username;
+    const userIndex = loginUsers.findIndex((user) => user.username === username);
+    
+    if (loginUsers[userIndex].userType.find((user) => user === "admin")){
+        loginUsers = loginUsers.filter((user) => user.username !== username);
+        res.status(200).json({ message: `Usuário ${username} deletado.`});
+    } else{
+        return res.status(400).json({ message: "Só é possível deletar usuários administradores." });
+    }
 };
 
 module.exports = {
     loginUsers,
     getLogin,
-    autenticate
+    autenticate,
+    getAllLogins,
+    getUsernameLogin,
+    updateUser,
+    deleteUser
 }
