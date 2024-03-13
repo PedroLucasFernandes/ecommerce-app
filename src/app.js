@@ -1,11 +1,11 @@
-const express = require("express");
+const express = require('express');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const productIndex = require('./routes/');
+const routesIndex = require('./routes/');
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -19,18 +19,31 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use(cookieParser());
+
 app.use((req, res, next) => {
     res.status(200).setHeader('X-Frame-Options', 'DENY');
     next();
 });
 
-app.use('/api', productIndex);
+app.use('/api', routesIndex);
 
-const htmlPath = path.join(__dirname, './index.html');
 
-app.get('/', (req, res) => {
-    res.status(200).sendFile(htmlPath);
-});
+const loginPage = require('./view/login');
+app.get('/', loginPage);
+
+const menuPage = require('./view/menu');
+const { loginUsers } = require('./controller/loginController');
+app.get('/menu', (req, res, next) => {
+    const sessionToken = req.cookies.session_id;
+    const isAuthenticated = loginUsers.some(user => user.sessionToken === sessionToken);
+
+    if (isAuthenticated) {
+        next();
+    } else {
+        res.redirect('/');
+    }
+}, menuPage);
 
 app.listen(port, () => {
     console.log(`Servidor está rodando em http://localhost:${port}`);
