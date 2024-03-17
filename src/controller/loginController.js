@@ -1,39 +1,39 @@
-const crypto = require('crypto');
+const hashPassword = require('../utils/hashpassword');
+const comparePassword = require('../utils/comparePassword');
 
-let loginUsers = [
-    {
-        "username": "pedro",
-        "name": "Pedro Fernandes",
-        "password": "123456",
-        "userType": ["admin"],
-        "sessionToken": ""
-    },
+const { SECRET_KEY } = require('../config');
+const jwt = require('jsonwebtoken');
 
-    {
-        "username": "kenji",
-        "name": "Kenji Taniguchi",
-        "password": "654321",
-        "userType": ["user"],
-        "sessionToken": ""
-    }
-];
-
-const getLogin = (req, res) => {
-    const sessionToken = req.cookies.session_id;
-
-    if (sessionToken){
-        const foundUser = loginUsers.filter(user => user.sessionToken === sessionToken);
-        if (foundUser.length > 0){
-            return res.json({ username: foundUser[0].username, name: foundUser[0].name })
-        }
-    }
-
-    const error = 'Falha ao tentar obter dados do usuário.';
-    res.cookie('session_id', '', { expires: new Date(0) });
-    res.json({ error });
+async function createAdmin(){
+    const username = "kenji";
+    const name = "Kenji Taniguchi";
+    const password = await hashPassword("123456");
+    const userType = [ "admin", "user" ];
+    return { username, name, password, userType };
 };
 
-const autenticate = (req, res) => {
+async function createUser(){
+    const username = "samir";
+    const name = "Samir";
+    const password = await hashPassword("654321");
+    const userType = [ "user" ];
+    return { username, name, password, userType };
+};
+
+async function createLoginUsers(){
+    const adminUser = await createAdmin();
+    const commonUser = await createUser();
+    return [ adminUser, commonUser ];
+};
+
+const getLogin = async (req, res) => {
+    const user = req.user;
+    return res.json(user);
+};
+
+const autenticate = async (req, res) => {
+    let loginUsers = await createLoginUsers();
+    
     const { username, password } = req.body;
 
     const error = 'Usuário e/ou senha inválidos.';
@@ -48,16 +48,26 @@ const autenticate = (req, res) => {
         return res.status(400).json({ error });
     }
 
-    const foundUsername = foundUser[0].username;
+    const match = await comparePassword(password, foundUser[0].password);
 
-    const timestamp = Date.now();
-    const sessionToken = crypto.createHash("sha256").update(`${timestamp}`).digest("hex");
-    
-    const index = loginUsers.findIndex(user => user.username === foundUsername);
-    loginUsers[index].sessionToken = sessionToken;
+    if(!match){
+        res.cookie('session_id', '', { expires: new Date(0) });
+        return res.status(400).json({ error });
+    }
 
-    res.cookie('session_id', sessionToken, { maxAge: 900000, httpOnly: true });
-    res.status(200).json({ message: sessionToken })
+    const user = {
+        username: foundUser[0].username,
+        name: foundUser[0].name,
+        userType: foundUser[0].userType
+    };
+
+    try{
+        const sessionToken = await jwt.sign({ user }, SECRET_KEY);
+        res.cookie('session_id', sessionToken, { maxAge: 900000, httpOnly: true });
+        res.status(200).json({ sessionToken: sessionToken })
+    } catch (error){
+        res.status(500).json({ error: 'Erro ao gerar token JWT' })
+    }
 };
 
 const getAllLogins = (req, res) => {
@@ -65,18 +75,8 @@ const getAllLogins = (req, res) => {
 };
 
 const getUsernameLogin = (req, res) => {
-    const username = req.params.username;
-    const userIndex = loginUsers.findIndex((user) => user.username === username);
-
-    if(userIndex === -1){
-        return res.status(400).json({ message: "Usuário não encontrado." });
-    }
-    
-    if (loginUsers[userIndex].userType.find((user) => user === "admin")){
-        res.status(200).json(loginUsers[userIndex]);
-    } else{
-        return res.status(400).json({ message: "Só é possível ver usuários administradores." });
-    }
+    const user = req.user;
+    return res.json(user);
 
 };
 
@@ -94,7 +94,7 @@ const updateUser = (req, res) => {
         loginUsers[userIndex] = { ...loginUsers[userIndex], username, password };
         res.status(200).json({ message: `Usuário ${username} atualizado.`});
     } else{
-        return res.status(400).json({ message: "Só é possível deletar usuários administradores." });
+        return res.status(400).json({ message: "Somente administradores têm autorização para isso!" });
     }
 };
 
@@ -106,7 +106,7 @@ const deleteUser = (req, res) => {
         loginUsers = loginUsers.filter((user) => user.username !== username);
         res.status(200).json({ message: `Usuário ${username} deletado.`});
     } else{
-        return res.status(400).json({ message: "Só é possível deletar usuários administradores." });
+        return res.status(400).json({ message: "Somente administradores têm autorização para isso!" });
     }
 };
 

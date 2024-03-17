@@ -1,12 +1,9 @@
+const config = require('./config');
 const express = require('express');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
-
 const app = express();
-const port = process.env.PORT || 3000;
+const port = config.PORT;
 
-const routesIndex = require('./routes/');
-
+const cors = require('cors');
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || origin === 'http://localhost:3000') {
@@ -19,6 +16,7 @@ app.use(cors({
 
 app.use(express.json());
 
+const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 app.use((req, res, next) => {
@@ -26,6 +24,7 @@ app.use((req, res, next) => {
     next();
 });
 
+const routesIndex = require('./routes/');
 app.use('/api', routesIndex);
 
 
