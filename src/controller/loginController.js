@@ -8,13 +8,13 @@ const { SECRET_KEY } = require('../config');
 const jwt = require('jsonwebtoken');
 
 async function createLoginUsers(req, res){
-    const { username, name, password } = req.body;
+    const { username, name, password, userType } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ error: "Nome e senha são obrigatórios" });
     }
 
-    const newUser = { username, name, password: await hashPassword(password), userType: ["user"] };
+    const newUser = { username, name, password: await hashPassword(password), userType };
 
     db.put(`user_${username}`, JSON.stringify(newUser), (err) => {
         if(err) {
@@ -74,7 +74,7 @@ const getAllLogins = (req, res) => {
             res.status(500).json({ error: "Erro ao buscar usuários" });
             return;
         }
-        res.json(data);
+        res.status(201).json(data);
     });
 };
 

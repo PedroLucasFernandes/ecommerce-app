@@ -1,25 +1,27 @@
-let products = [
-    {id: 1, name: "Phone", value: 2000.00},
-    {id: 2, name: "Notebook", value: 4000.00}
-];
-
-let nextProductID = products.length + 1;
+const Database = require('../database');
+const db = new Database('products');
 
 const getAllProducts = (req, res) => {
-    res.status(200).json(products);
+    db.readAllData((err, data) => {
+        if (err) {
+            res.status(500).json({ error: "Erro ao buscar produtos" });
+            return;
+        }
+        res.json(data);
+    });
 };
 
 const getProduct = (req, res) => {
-    const productID = parseInt(req.params.id);
-    const productIndex = products.findIndex((product) => product.id === productID);
-    console.log(productID);
-    console.log(productIndex);
-    
-    if(productIndex === -1){
-        return res.status(404).json({ error: "Produto não encontrado" });
-    }
+    const productId = parseInt(req.params.id);
 
-    res.status(200).json(products[productIndex]);
+    db.get(`product_${productId}`, (err, value) => {
+        if(err){
+            res.status(404).json({ error: 'Produto não encontrado' });
+            return;
+        }
+        const product = JSON.parse(value);
+        res.status(201).json(product);
+    });
 };
 
 const createProduct = (req, res) => {
@@ -29,47 +31,82 @@ const createProduct = (req, res) => {
         return res.status(400).json({ error: "O nome e valor são obrigatórios" });
     }
 
-    if (typeof value !== 'number' || !/^\d+(\.\d{1,2})?$/.test(value.toString())) {
-        return res.status(400).json({ error: "O valor deve ser numérico com até duas casas decimais" });
+    const numericValue = parseFloat(value);
+    if (typeof numericValue !== 'number' && !/^\d+(\.\d{2})?$/.test(numericValue.toString())) {
+        return res.status(400).json({ error: "O valor deve ser numérico com duas casas decimais" });
     }
 
-    const newProduct = { id: nextProductID++, name, value };
-    products.push(newProduct);
-    res.status(201).json(newProduct);
+    db.readAllData((err, products) => {
+        if (err) {
+            return res.status(500).json({ error: "Erro ao buscar produtos" });
+        }
+
+        const maxProductId = products.length;
+
+        const nextProductId = maxProductId + 1;
+
+        const newProduct = { id: nextProductId, name, value: numericValue };
+
+        db.put(`product_${nextProductId}`, JSON.stringify(newProduct), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Erro ao criar produto' });
+            }
+            
+            res.status(201).json(newProduct);
+        });
+    });
 };
 
 const updateProduct = (req, res) => {
-    const productID = parseInt(req.params.id);
+    const productId = parseInt(req.params.id);
     const { name, value } = req.body;
-
-    const productIndex = products.findIndex((product) => product.id === productID);
-
-    if(productIndex === -1){
-        return res.status(404).json({ error: "Produto não encontrado" });
-    }
 
     if(!name || !value){
         return res.status(400).json({ error: "O nome e valor são obrigatórios" });
     }
 
-    if (typeof value !== 'number' || !/^\d+(\.\d{1,2})?$/.test(value.toString())) {
-        return res.status(400).json({ error: "O valor deve ser numérico com até duas casas decimais" });
+    const numericValue = parseFloat(value);
+    if (typeof numericValue !== 'number' && !/^\d+(\.\d{2})?$/.test(numericValue.toString())) {
+        return res.status(400).json({ error: "O valor deve ser numérico com duas casas decimais" });
     }
 
-    products[productIndex] = { ...products[productIndex], name, value };
-    res.status(200).json({ message: `Produto ${productID} atualizado.`});
+    db.get(`product_${productId}`, (err, numericValue) => {
+        if(err){
+            res.status(404).json({ error: 'Produto não encontrado' });
+            return;
+        }
+
+        const updateProduct = { name, value };
+        db.put(`product_${productId}`, JSON.stringify(updateProduct), (err) => {
+            if(err) {
+                res.status(500).json({ error: 'Erro ao atualizar usuário' });
+                return;
+            }
+            res.json({ message: `Produto ${productId} atualizado` });
+        });
+    });
 };
 
 const deleteProduct = (req, res) => {
-    const productID = parseInt(req.params.id);
+    const productId = parseInt(req.params.id);
 
-    products = products.filter((product) => product.id !== productID);
+    db.get(`product_${productId}`, (err, value) => {
+        if(err){
+            res.status(404).json({ error: 'Produto não encontrado' });
+            return;
+        }
 
-    res.status(200).json({ message: `Produto ${productID} deletado.`});
+        db.del(`product_${productId}`, (err) => {
+            if(err){
+                res.status(500).json({ error: 'Erro ao excluir produto' });
+                return;
+            }
+            res.status(200).json({ message: `Produto ${productId} deletado.`});
+        });
+    });
 };
 
 module.exports = {
-    products,
     getAllProducts,
     getProduct,
     createProduct,

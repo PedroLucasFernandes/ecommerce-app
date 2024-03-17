@@ -1,25 +1,27 @@
-const { customers } = require('./customerController');
-const { products } = require('./productController');
-
-let orders = [
-    { id: 1, customerId: 1, items: [{ id: 1, quantity: 2 }, { id: 2, quantity: 1 }]},
-    { id: 2, customerId: 1, items: [{ id: 1, quantity: 7 }, { id: 2, quantity: 12 }]},
-    { id: 3, customerId: 2, items: [{ id: 1, quantity: 5 }, { id: 2, quantity: 8 }]}
-];
+const Database = require('../database');
+const db = new Database('orders');
 
 const getAllOrders = (req, res) => {
-    res.status(200).json(orders);
+    db.readAllData((err, data) => {
+        if (err) {
+            res.status(500).json({ error: "Erro ao buscar pedidos" });
+            return;
+        }
+        res.status(201).json(data);
+    });
 };
 
 const getOrder = (req, res) => {
-    const orderID = parseInt(req.params.id);
-    const orderIndex = orders.findIndex((order) => order.id === orderID);
-    
-    if(orderIndex === -1){
-        return res.status(404).json({ error: "Produto não encontrado" });
-    }
+    const orderId = parseInt(req.params.id);
 
-    res.status(200).json(orders[orderIndex]);
+    db.get(`order_${orderId}`, (err, value) => {
+        if(err){
+            res.status(404).json({ error: 'Pedido não encontrado' });
+            return;
+        }
+        const order = JSON.parse(value);
+        res.status(201).json(order);
+    });
 };
 
 const createOrder = (req, res) => {
