@@ -32,12 +32,10 @@ const loginPage = require('./view/login');
 app.get('/', loginPage);
 
 const menuPage = require('./view/menu');
-const { loginUsers } = require('./controller/loginController');
 app.get('/menu', (req, res, next) => {
     const sessionToken = req.cookies.session_id;
-    const isAuthenticated = loginUsers.some(user => user.sessionToken === sessionToken);
 
-    if (isAuthenticated) {
+    if (sessionToken) {
         next();
     } else {
         res.redirect('/');

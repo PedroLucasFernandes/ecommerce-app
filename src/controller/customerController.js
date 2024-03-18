@@ -16,10 +16,7 @@ const getCustomer = (req, res) => {
 
     db.get(`customer_${customerId}`, (err, value) => {
         if (err) {
-            if (err.notFound) {
                 return res.status(404).json({ error: 'Cliente não encontrado' });
-            }
-            return res.status(500).json({ error: 'Erro ao buscar cliente' });
         }
         const customer = JSON.parse(value);
         res.status(200).json(customer);
